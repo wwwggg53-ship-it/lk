@@ -8,48 +8,62 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f9fafb;
             padding: 20px;
         }
         h1 {
             text-align: center;
             margin-bottom: 20px;
-            color: #343a40;
+            color: #1e293b;
+            font-size: 1.5rem;
         }
         .loading {
             font-style: italic;
-            color: #6c757d;
+            color: #64748b;
             text-align: center;
         }
         table {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        th, td {
-            text-align: center;
-            vertical-align: middle;
-            padding: 10px;
         }
         th {
-            background-color: #0d6efd;
+            background-color: #3b82f6;
             color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            padding: 12px;
+            cursor: pointer;
+        }
+        td {
+            padding: 12px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 0.9rem;
         }
         tr:nth-child(even) {
-            background-color: #f1f1f1;
+            background-color: #f3f4f6;
         }
         tr:hover {
-            background-color: #e2e6ea;
+            background-color: #e2e8f0;
         }
         @media (max-width: 768px) {
             h1 {
-                font-size: 1.5rem;
+                font-size: 1.2rem;
             }
-            table {
-                font-size: 0.9rem;
+            th, td {
+                font-size: 0.8rem;
+                padding: 8px;
             }
+        }
+        .sort-icon {
+            margin-left: 5px;
+            font-size: 0.8rem;
         }
     </style>
 </head>
@@ -84,6 +98,9 @@
         // URL для доступа к данным из Google Таблицы
         const sheetUrl = "https://docs.google.com/spreadsheets/d/1OXH4mDRu2Su0rd_9JPiFCKpZqvJBnQzKufMVR7UVEL0/gviz/tq?tqx=out:json&sheet=Оплаченные";
 
+        let currentSortColumn = null; // Текущая сортируемая колонка
+        let sortDirection = 1; // Направление сортировки (1 = по возрастанию, -1 = по убыванию)
+
         // Функция для получения данных
         async function fetchData() {
             try {
@@ -111,34 +128,32 @@
                 tbody.innerHTML = "";
 
                 // Добавляем заголовки
-                filteredHeaders.forEach(header => {
+                filteredHeaders.forEach((header, index) => {
                     const th = document.createElement("th");
                     th.textContent = header;
+
+                    // Добавляем иконку для сортировки
+                    const sortIcon = document.createElement("span");
+                    sortIcon.classList.add("sort-icon");
+                    sortIcon.textContent = "↕";
+                    th.appendChild(sortIcon);
+
+                    // Добавляем обработчик клика для сортировки
+                    th.addEventListener("click", () => {
+                        if (currentSortColumn === index) {
+                            sortDirection *= -1; // Меняем направление сортировки
+                        } else {
+                            currentSortColumn = index;
+                            sortDirection = 1; // Сбрасываем направление сортировки
+                        }
+                        renderTable(filteredHeaders, rows);
+                    });
+
                     thead.appendChild(th);
                 });
 
-                // Добавляем данные
-                rows.forEach(row => {
-                    const tr = document.createElement("tr");
-
-                    // Фильтруем ячейки, убирая пустые колонки
-                    row.c
-                        .filter((_, index) => filteredHeaders[index]) // Сохраняем только нужные колонки
-                        .forEach(cell => {
-                            const td = document.createElement("td");
-                            let value = cell ? cell.v : "";
-
-                            // Если значение является датой, форматируем его
-                            if (typeof value === "number" && value > 40000 && value < 50000) {
-                                value = formatDate(value);
-                            }
-
-                            td.textContent = value;
-                            tr.appendChild(td);
-                        });
-
-                    tbody.appendChild(tr);
-                });
+                // Рендеринг таблицы
+                renderTable(filteredHeaders, rows);
 
                 // Обновляем статус
                 document.getElementById("status").textContent = "Данные успешно обновлены.";
@@ -148,6 +163,48 @@
             }
         }
 
+        // Функция для рендеринга таблицы
+        function renderTable(headers, rows) {
+            const table = document.querySelector(".table");
+            const tbody = table.querySelector("tbody");
+
+            // Очищаем старые данные
+            tbody.innerHTML = "";
+
+            // Сортируем строки по текущей колонке
+            const sortedRows = [...rows].sort((a, b) => {
+                const aValue = a.c[currentSortColumn]?.v || "";
+                const bValue = b.c[currentSortColumn]?.v || "";
+
+                if (typeof aValue === "number" && typeof bValue === "number") {
+                    return (aValue - bValue) * sortDirection;
+                }
+                return String(aValue).localeCompare(String(bValue)) * sortDirection;
+            });
+
+            // Добавляем данные
+            sortedRows.forEach(row => {
+                const tr = document.createElement("tr");
+
+                row.c
+                    .filter((_, index) => headers[index]) // Сохраняем только нужные колонки
+                    .forEach(cell => {
+                        const td = document.createElement("td");
+                        let value = cell ? cell.v : "";
+
+                        // Если значение является датой, форматируем его
+                        if (typeof value === "number" && value > 40000 && value < 50000) {
+                            value = formatDate(value);
+                        }
+
+                        td.textContent = value;
+                        tr.appendChild(td);
+                    });
+
+                tbody.appendChild(tr);
+            });
+        }
+
         // Запускаем загрузку данных при загрузке страницы
         fetchData();
 
@@ -155,10 +212,6 @@
         setInterval(fetchData, 30000); // 30000 мс = 30 секунд
     </script>
 
-    <!-- Подключение Bootstrap JS (опционально, если нужны дополнительные компоненты) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
     <!-- Подключение Bootstrap JS (опционально, если нужны дополнительные компоненты) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
