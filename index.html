@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Данные из Google Таблицы</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .loading {
+            font-style: italic;
+            color: gray;
+        }
+    </style>
+</head>
+<body>
+    <h1>Оплаченные заказы</h1>
+    <div id="status" class="loading">Загрузка данных...</div>
+    <table id="data-table">
+        <thead>
+            <tr>
+                <!-- Заголовки будут добавлены автоматически -->
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Данные будут добавленся автоматически -->
+        </tbody>
+    </table>
+
+    <script>
+        // URL для доступа к данным из Google Таблицы
+        const sheetUrl = "https://docs.google.com/spreadsheets/d/1OXH4mDRu2Su0rd_9JPiFCKpZqvJBnQzKufMVR7UVEL0/gviz/tq?tqx=out:json&sheet=Оплаченные";
+
+        // Функция для получения данных
+        async function fetchData() {
+            try {
+                const response = await fetch(sheetUrl);
+                const text = await response.text();
+
+                // Парсим JSONP ответ
+                const jsonString = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+)\)/)[1];
+                const data = JSON.parse(jsonString);
+
+                // Извлекаем строки и заголовки
+                const rows = data.table.rows;
+                const headers = data.table.cols.map(col => col.label);
+
+                // Очищаем таблицу
+                const table = document.getElementById("data-table");
+                const thead = table.querySelector("thead tr");
+                const tbody = table.querySelector("tbody");
+
+                // Очищаем старые данные
+                thead.innerHTML = "";
+                tbody.innerHTML = "";
+
+                // Добавляем заголовки
+                headers.forEach(header => {
+                    const th = document.createElement("th");
+                    th.textContent = header;
+                    thead.appendChild(th);
+                });
+
+                // Добавляем данные
+                rows.forEach(row => {
+                    const tr = document.createElement("tr");
+                    row.c.forEach(cell => {
+                        const td = document.createElement("td");
+                        td.textContent = cell ? cell.v : "";
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+
+                // Обновляем статус
+                document.getElementById("status").textContent = "Данные успешно обновлены.";
+            } catch (error) {
+                console.error("Ошибка при загрузке данных:", error);
+                document.getElementById("status").textContent = "Ошибка при загрузке данных.";
+            }
+        }
+
+        // Запускаем загрузку данных при загрузке страницы
+        fetchData();
+
+        // Автоматическое обновление данных каждые 30 секунд
+        setInterval(fetchData, 30000); // 30000 мс = 30 секунд
+    </script>
+</body>
+</html>
