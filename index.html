@@ -49,56 +49,41 @@
                 transform: rotate(360deg);
             }
         }
-        .accordion-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .accordion-item {
+        .table-container {
             width: 100%;
             max-width: 400px;
-            margin-bottom: 15px;
+            margin: 0 auto;
             border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             overflow: hidden;
-            transition: transform 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        .accordion-item:hover {
-            transform: translateY(-5px);
-        }
-        .accordion-header {
-            background-color: #3b82f6;
-            color: white;
-            font-weight: bold;
-            padding: 15px;
-            cursor: pointer;
-            text-align: center;
-            border-radius: 15px 15px 0 0;
+        .table-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-        }
-        .accordion-header span {
-            font-size: 0.9rem;
-        }
-        .accordion-header i {
-            font-size: 1.2rem;
-            transition: transform 0.3s;
-        }
-        .accordion-header.open i {
-            transform: rotate(180deg);
-        }
-        .accordion-body {
-            background-color: #ffffff;
             padding: 15px;
-            border-radius: 0 0 15px 15px;
-            display: none;
-            transition: max-height 0.3s ease-in-out;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
         }
-        .accordion-body p {
+        .table-row:hover {
+            background-color: #f1f5f9;
+        }
+        .table-row.open {
+            background-color: #e2e8f0;
+        }
+        .table-row-header {
+            font-weight: bold;
+            color: #3b82f6;
+        }
+        .table-row-details {
+            display: none;
+            padding: 10px 15px;
+            background-color: #f9fafb;
+            color: #475569;
+        }
+        .table-row-details p {
             margin: 5px 0;
             font-size: 0.9rem;
-            color: #475569;
         }
 
         /* Темная тема */
@@ -110,13 +95,17 @@
             .app-header {
                 background-color: #2563eb;
             }
-            .accordion-header {
-                background-color: #2563eb;
-            }
-            .accordion-body {
+            .table-row {
                 background-color: #1e293b;
             }
-            .accordion-body p {
+            .table-row:hover {
+                background-color: #2d3748;
+            }
+            .table-row.open {
+                background-color: #2d3748;
+            }
+            .table-row-details {
+                background-color: #1e293b;
                 color: #cbd5e1;
             }
         }
@@ -127,11 +116,11 @@
                 font-size: 1rem;
                 padding: 10px;
             }
-            .accordion-header {
+            .table-row {
                 font-size: 0.9rem;
                 padding: 12px;
             }
-            .accordion-body p {
+            .table-row-details p {
                 font-size: 0.8rem;
             }
         }
@@ -150,8 +139,8 @@
             <div class="spinner"></div>
         </div>
 
-        <!-- Контейнер для аккордеонов -->
-        <div id="accordion-container" class="accordion-container" style="display: none;"></div>
+        <!-- Таблица с аккордеонами -->
+        <div id="table-container" class="table-container" style="display: none;"></div>
     </div>
 
     <script>
@@ -189,21 +178,21 @@
                     return aDays - bDays;
                 });
 
-                // Рендеринг аккордеона
-                renderAccordion(sortedRows);
+                // Рендеринг таблицы
+                renderTable(sortedRows);
 
                 // Скрываем спиннер и показываем контент
                 document.getElementById("loading-spinner").style.display = "none";
-                document.getElementById("accordion-container").style.display = "flex";
+                document.getElementById("table-container").style.display = "block";
             } catch (error) {
                 console.error("Ошибка при загрузке данных:", error);
                 document.getElementById("loading-spinner").innerHTML = "<p>Не удалось загрузить данные.</p>";
             }
         }
 
-        // Функция для рендеринга аккордеона
-        function renderAccordion(rows) {
-            const container = document.getElementById("accordion-container");
+        // Функция для рендеринга таблицы
+        function renderTable(rows) {
+            const container = document.getElementById("table-container");
             container.innerHTML = ""; // Очищаем контейнер
 
             rows.forEach((row, index) => {
@@ -227,39 +216,37 @@
                     }
                 }
 
-                // Создаем аккордеон
-                const accordionItem = document.createElement("div");
-                accordionItem.classList.add("accordion-item");
+                // Создаем строку таблицы
+                const tableRow = document.createElement("div");
+                tableRow.classList.add("table-row");
 
-                // Заголовок аккордеона
+                // Заголовок строки
                 const header = document.createElement("div");
-                header.classList.add("accordion-header");
-                header.innerHTML = `
-                    <span>${phone} (${daysText})</span>
-                    <i class="fas fa-chevron-down"></i>
-                `;
+                header.classList.add("table-row-header");
+                header.textContent = `${phone} (${daysText})`;
+
+                // Добавляем обработчик клика
                 header.addEventListener("click", () => {
-                    const body = accordionItem.querySelector(".accordion-body");
-                    const isOpen = body.style.display === "block";
-                    body.style.display = isOpen ? "none" : "block";
-                    header.classList.toggle("open", !isOpen);
+                    const details = tableRow.querySelector(".table-row-details");
+                    const isOpen = details.style.display === "block";
+                    details.style.display = isOpen ? "none" : "block";
+                    tableRow.classList.toggle("open", !isOpen);
                 });
 
-                // Тело аккордеона
-                const body = document.createElement("div");
-                body.classList.add("accordion-body");
-                body.style.display = "none"; // По умолчанию скрыто
-                body.innerHTML = `
+                // Детали строки
+                const details = document.createElement("div");
+                details.classList.add("table-row-details");
+                details.innerHTML = `
                     <p><strong>Имя пользователя:</strong> ${username}</p>
                     <p><strong>Дата:</strong> ${formattedDate}</p>
                 `;
 
-                // Добавляем элементы в аккордеон
-                accordionItem.appendChild(header);
-                accordionItem.appendChild(body);
+                // Добавляем элементы в строку
+                tableRow.appendChild(header);
+                tableRow.appendChild(details);
 
-                // Добавляем аккордеон в контейнер
-                container.appendChild(accordionItem);
+                // Добавляем строку в таблицу
+                container.appendChild(tableRow);
             });
         }
 
