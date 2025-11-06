@@ -14,21 +14,16 @@
             color: #f1f5f9;
             padding: 0;
             margin: 0;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        .app-header {
-            background-color: #2563eb;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            font-size: 1.2rem;
-            font-weight: bold;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
         }
         .container {
-            padding: 20px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
         }
         .loading-spinner {
             display: flex;
@@ -50,89 +45,63 @@
             }
         }
         .summary {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 1.1rem;
-            color: #2563eb;
+            font-size: 1.2rem;
             font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 20px;
         }
         .table-container {
             width: 100%;
-            max-width: 400px;
-            margin: 0 auto;
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
         }
         .table-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            position: relative;
             padding: 15px;
             cursor: pointer;
-            transition: background-color 0.2s ease-in-out;
+            transition: all 0.3s ease-in-out;
             border-bottom: 1px solid #2d3748;
+            background: linear-gradient(135deg, #1e40af, #2563eb);
+            color: white;
         }
         .table-row:last-child {
             border-bottom: none;
         }
         .table-row:hover {
-            background-color: #2d3748;
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
         }
         .table-row.open {
-            background-color: #2d3748;
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
         }
         .table-row-header {
             font-weight: bold;
-            color: #f1f5f9;
         }
         .table-row-details {
             display: none;
             padding: 10px 15px;
             background-color: #1e293b;
             color: #cbd5e1;
-        }
-        .table-row-details p {
-            margin: 5px 0;
             font-size: 0.9rem;
-        }
-
-        /* Цветовые индикаторы для количества дней */
-        .table-row[data-days="1"] {
-            background-color: #1e40af;
-        }
-        .table-row[data-days="7"] {
-            background-color: #2563eb;
-        }
-        .table-row[data-days="30"] {
-            background-color: #3b82f6;
+            margin-top: 10px;
         }
 
         /* Адаптация для мобильных устройств */
         @media (max-width: 768px) {
-            .app-header {
+            .summary {
                 font-size: 1rem;
-                padding: 10px;
             }
             .table-row {
                 font-size: 0.9rem;
                 padding: 12px;
             }
-            .table-row-details p {
+            .table-row-details {
                 font-size: 0.8rem;
-            }
-            .summary {
-                font-size: 1rem;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Верхняя панель -->
-    <div class="app-header">
-        Оплаченные заказы
-    </div>
-
     <!-- Контейнер для контента -->
     <div class="container">
         <!-- Индикатор загрузки -->
@@ -140,8 +109,8 @@
             <div class="spinner"></div>
         </div>
 
-        <!-- Счетчик записей -->
-        <div id="summary" class="summary" style="display: none;">Оплачено (0) чел.</div>
+        <!-- Блок с надписью "Оплачено число чел." -->
+        <div id="summary" class="summary" style="display: none;">Оплачено 0 чел.</div>
 
         <!-- Таблица с аккордеонами -->
         <div id="table-container" class="table-container" style="display: none;"></div>
@@ -201,7 +170,7 @@
         // Функция для обновления счетчика записей
         function updateSummary(count) {
             const summary = document.getElementById("summary");
-            summary.textContent = `Оплачено (${count}) чел.`;
+            summary.textContent = `Оплачено ${count} чел.`;
         }
 
         // Функция для рендеринга таблицы
@@ -233,7 +202,6 @@
                 // Создаем строку таблицы
                 const tableRow = document.createElement("div");
                 tableRow.classList.add("table-row");
-                tableRow.setAttribute("data-days", days); // Устанавливаем атрибут для цветового индикатора
 
                 // Заголовок строки
                 const header = document.createElement("div");
