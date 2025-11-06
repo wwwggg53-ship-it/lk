@@ -31,6 +31,7 @@
         th, td {
             text-align: center;
             vertical-align: middle;
+            padding: 10px;
         }
         th {
             background-color: #0d6efd;
@@ -69,6 +70,17 @@
     </div>
 
     <script>
+        // Функция для преобразования даты из Google Sheets в читаемый формат
+        function formatDate(serialDate) {
+            if (!serialDate) return ""; // Если дата пустая, возвращаем пустую строку
+            const epoch = new Date(1899, 11, 30); // Начало отсчета Google Sheets
+            const date = new Date(epoch.getTime() + serialDate * 24 * 60 * 60 * 1000);
+            const day = String(date.getDate()).padStart(2, "0");
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const year = date.getFullYear();
+            return `${day}.${month}.${year}`;
+        }
+
         // URL для доступа к данным из Google Таблицы
         const sheetUrl = "https://docs.google.com/spreadsheets/d/1OXH4mDRu2Su0rd_9JPiFCKpZqvJBnQzKufMVR7UVEL0/gviz/tq?tqx=out:json&sheet=Оплаченные";
 
@@ -86,6 +98,9 @@
                 const rows = data.table.rows;
                 const headers = data.table.cols.map(col => col.label);
 
+                // Фильтруем заголовки, убирая пустые колонки
+                const filteredHeaders = headers.filter(header => header.trim() !== "");
+
                 // Очищаем таблицу
                 const table = document.querySelector(".table");
                 const thead = table.querySelector("thead tr");
@@ -96,7 +111,7 @@
                 tbody.innerHTML = "";
 
                 // Добавляем заголовки
-                headers.forEach(header => {
+                filteredHeaders.forEach(header => {
                     const th = document.createElement("th");
                     th.textContent = header;
                     thead.appendChild(th);
@@ -105,11 +120,23 @@
                 // Добавляем данные
                 rows.forEach(row => {
                     const tr = document.createElement("tr");
-                    row.c.forEach(cell => {
-                        const td = document.createElement("td");
-                        td.textContent = cell ? cell.v : "";
-                        tr.appendChild(td);
-                    });
+
+                    // Фильтруем ячейки, убирая пустые колонки
+                    row.c
+                        .filter((_, index) => filteredHeaders[index]) // Сохраняем только нужные колонки
+                        .forEach(cell => {
+                            const td = document.createElement("td");
+                            let value = cell ? cell.v : "";
+
+                            // Если значение является датой, форматируем его
+                            if (typeof value === "number" && value > 40000 && value < 50000) {
+                                value = formatDate(value);
+                            }
+
+                            td.textContent = value;
+                            tr.appendChild(td);
+                        });
+
                     tbody.appendChild(tr);
                 });
 
@@ -128,6 +155,10 @@
         setInterval(fetchData, 30000); // 30000 мс = 30 секунд
     </script>
 
+    <!-- Подключение Bootstrap JS (опционально, если нужны дополнительные компоненты) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
     <!-- Подключение Bootstrap JS (опционально, если нужны дополнительные компоненты) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
