@@ -23,47 +23,39 @@
             color: #64748b;
             text-align: center;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        .accordion-item {
+            margin-bottom: 10px;
             border-radius: 10px;
-            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        th {
+        .accordion-header {
             background-color: #3b82f6;
             color: white;
             font-weight: bold;
-            text-transform: uppercase;
-            font-size: 0.9rem;
             padding: 12px;
             cursor: pointer;
+            border-radius: 10px 10px 0 0;
         }
-        td {
-            padding: 12px;
-            text-align: center;
-            vertical-align: middle;
+        .accordion-body {
+            background-color: #ffffff;
+            padding: 15px;
+            border-radius: 0 0 10px 10px;
+        }
+        .accordion-body p {
+            margin: 5px 0;
             font-size: 0.9rem;
-        }
-        tr:nth-child(even) {
-            background-color: #f3f4f6;
-        }
-        tr:hover {
-            background-color: #e2e8f0;
         }
         @media (max-width: 768px) {
             h1 {
                 font-size: 1.2rem;
             }
-            th, td {
-                font-size: 0.8rem;
-                padding: 8px;
+            .accordion-header {
+                font-size: 0.9rem;
+                padding: 10px;
             }
-        }
-        .sort-icon {
-            margin-left: 5px;
-            font-size: 0.8rem;
+            .accordion-body p {
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
@@ -71,16 +63,7 @@
     <div class="container">
         <h1>Оплаченные заказы</h1>
         <div id="status" class="loading">Загрузка данных...</div>
-        <table class="table table-bordered table-responsive">
-            <thead>
-                <tr>
-                    <!-- Заголовки будут добавлены автоматически -->
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Данные будут добавлены автоматически -->
-            </tbody>
-        </table>
+        <div id="accordion-container"></div>
     </div>
 
     <script>
@@ -98,9 +81,6 @@
         // URL для доступа к данным из Google Таблицы
         const sheetUrl = "https://docs.google.com/spreadsheets/d/1OXH4mDRu2Su0rd_9JPiFCKpZqvJBnQzKufMVR7UVEL0/gviz/tq?tqx=out:json&sheet=Оплаченные";
 
-        let currentSortColumn = null; // Текущая сортируемая колонка
-        let sortDirection = 1; // Направление сортировки (1 = по возрастанию, -1 = по убыванию)
-
         // Функция для получения данных
         async function fetchData() {
             try {
@@ -113,47 +93,16 @@
 
                 // Извлекаем строки и заголовки
                 const rows = data.table.rows;
-                const headers = data.table.cols.map(col => col.label);
 
-                // Фильтруем заголовки, убирая пустые колонки
-                const filteredHeaders = headers.filter(header => header.trim() !== "");
-
-                // Очищаем таблицу
-                const table = document.querySelector(".table");
-                const thead = table.querySelector("thead tr");
-                const tbody = table.querySelector("tbody");
-
-                // Очищаем старые данные
-                thead.innerHTML = "";
-                tbody.innerHTML = "";
-
-                // Добавляем заголовки
-                filteredHeaders.forEach((header, index) => {
-                    const th = document.createElement("th");
-                    th.textContent = header;
-
-                    // Добавляем иконку для сортировки
-                    const sortIcon = document.createElement("span");
-                    sortIcon.classList.add("sort-icon");
-                    sortIcon.textContent = "↕";
-                    th.appendChild(sortIcon);
-
-                    // Добавляем обработчик клика для сортировки
-                    th.addEventListener("click", () => {
-                        if (currentSortColumn === index) {
-                            sortDirection *= -1; // Меняем направление сортировки
-                        } else {
-                            currentSortColumn = index;
-                            sortDirection = 1; // Сбрасываем направление сортировки
-                        }
-                        renderTable(filteredHeaders, rows);
-                    });
-
-                    thead.appendChild(th);
+                // Сортируем данные по количеству дней
+                const sortedRows = rows.sort((a, b) => {
+                    const aDays = parseInt(a.c[2]?.v.match(/\d+/)[0]) || 0; // Кол-во дней из третьей колонки
+                    const bDays = parseInt(b.c[2]?.v.match(/\d+/)[0]) || 0;
+                    return aDays - bDays;
                 });
 
-                // Рендеринг таблицы
-                renderTable(filteredHeaders, rows);
+                // Рендеринг аккордеона
+                renderAccordion(sortedRows);
 
                 // Обновляем статус
                 document.getElementById("status").textContent = "Данные успешно обновлены.";
@@ -163,45 +112,60 @@
             }
         }
 
-        // Функция для рендеринга таблицы
-        function renderTable(headers, rows) {
-            const table = document.querySelector(".table");
-            const tbody = table.querySelector("tbody");
+        // Функция для рендеринга аккордеона
+        function renderAccordion(rows) {
+            const container = document.getElementById("accordion-container");
+            container.innerHTML = ""; // Очищаем контейнер
 
-            // Очищаем старые данные
-            tbody.innerHTML = "";
+            rows.forEach((row, index) => {
+                const username = row.c[0]?.v || ""; // Первая колонка (имя пользователя)
+                const phone = row.c[1]?.v || ""; // Вторая колонка (номер телефона)
+                const daysText = row.c[2]?.v || ""; // Третья колонка (кол-во дней)
+                const rawDate = row.c[3]?.v || ""; // Четвертая колонка (дата)
 
-            // Сортируем строки по текущей колонке
-            const sortedRows = [...rows].sort((a, b) => {
-                const aValue = a.c[currentSortColumn]?.v || "";
-                const bValue = b.c[currentSortColumn]?.v || "";
+                // Извлекаем числовое значение из строки "X дней"
+                const days = parseInt(daysText.match(/\d+/)[0]) || 0;
 
-                if (typeof aValue === "number" && typeof bValue === "number") {
-                    return (aValue - bValue) * sortDirection;
+                // Преобразуем дату в читаемый формат
+                let formattedDate = "";
+                if (rawDate.includes("Date")) {
+                    const match = rawDate.match(/Date\((\d+),(\d+),(\d+)\)/);
+                    if (match) {
+                        const year = parseInt(match[1]);
+                        const month = parseInt(match[2]) + 1; // Месяцы в JavaScript начинаются с 0
+                        const day = parseInt(match[3]);
+                        formattedDate = `${String(day).padStart(2, "0")}.${String(month).padStart(2, "0")}.${year}`;
+                    }
                 }
-                return String(aValue).localeCompare(String(bValue)) * sortDirection;
-            });
 
-            // Добавляем данные
-            sortedRows.forEach(row => {
-                const tr = document.createElement("tr");
+                // Создаем аккордеон
+                const accordionItem = document.createElement("div");
+                accordionItem.classList.add("accordion-item");
 
-                row.c
-                    .filter((_, index) => headers[index]) // Сохраняем только нужные колонки
-                    .forEach(cell => {
-                        const td = document.createElement("td");
-                        let value = cell ? cell.v : "";
+                // Заголовок аккордеона
+                const header = document.createElement("div");
+                header.classList.add("accordion-header");
+                header.textContent = `${phone} (${daysText})`;
+                header.addEventListener("click", () => {
+                    const body = accordionItem.querySelector(".accordion-body");
+                    body.style.display = body.style.display === "none" ? "block" : "none";
+                });
 
-                        // Если значение является датой, форматируем его
-                        if (typeof value === "number" && value > 40000 && value < 50000) {
-                            value = formatDate(value);
-                        }
+                // Тело аккордеона
+                const body = document.createElement("div");
+                body.classList.add("accordion-body");
+                body.style.display = "none"; // По умолчанию скрыто
+                body.innerHTML = `
+                    <p><strong>Имя пользователя:</strong> ${username}</p>
+                    <p><strong>Дата:</strong> ${formattedDate}</p>
+                `;
 
-                        td.textContent = value;
-                        tr.appendChild(td);
-                    });
+                // Добавляем элементы в аккордеон
+                accordionItem.appendChild(header);
+                accordionItem.appendChild(body);
 
-                tbody.appendChild(tr);
+                // Добавляем аккордеон в контейнер
+                container.appendChild(accordionItem);
             });
         }
 
